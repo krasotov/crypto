@@ -1,0 +1,21 @@
+{
+  "name": "sign-stamp",
+  "version": "1.0.0",
+  "description": "ЭЦП подписание документов в смарт-процессах Bitrix24",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "sync-placements": "node scripts/sync-placements.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "dejavu-fonts-ttf": "^2.37.3",
+    "express": "^4.21.2",
+    "pdf-lib": "^1.17.1"
+  }
+}
