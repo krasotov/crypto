@@ -336,6 +336,7 @@ app.post('/api/sign/complete', async (req, res) => {
       mode = 'main',
       detachedSigBase64,
       certInfo,
+      addStamp = true,
       stampedPdfBase64,
       detachedSigName,
       stampedPdfName,
@@ -386,7 +387,7 @@ app.post('/api/sign/complete', async (req, res) => {
     const isPdf = (entry?.contentType || '').includes('pdf') ||
       (entry?.filename || '').toLowerCase().endsWith('.pdf');
 
-    if (!signedPdfBuffer && entry && isPdf && certInfo) {
+    if (!signedPdfBuffer && entry && isPdf && certInfo && addStamp) {
       signLog.info('stamp_pdf', {
         requestId: req.requestId,
         sourceBytes: entry.buffer.length,
@@ -401,7 +402,7 @@ app.post('/api/sign/complete', async (req, res) => {
         stampedBytes: signedPdfBuffer.length,
         stampedBytesHuman: formatBytes(signedPdfBuffer.length),
       });
-    } else if (!signedPdfBuffer && entry && !isPdf) {
+    } else if (!signedPdfBuffer && entry) {
       signedPdfBuffer = entry.buffer;
     }
 
@@ -410,7 +411,8 @@ app.post('/api/sign/complete', async (req, res) => {
     }
 
     const client = createClient(req);
-    const pdfName = stampedPdfName || buildSignedPdfName(originalFilename);
+    const pdfName = stampedPdfName
+      || (addStamp && isPdf ? buildSignedPdfName(originalFilename) : originalFilename);
     const sigName = buildDetachedSigName(originalFilename, certInfo);
     const sigBuffer = Buffer.from(detachedSigBase64, 'base64');
 

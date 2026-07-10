@@ -26,19 +26,21 @@ curl -s -X POST "https://vibecode.bitrix24.tech/v1/apps/${APP_ID}/sources" \
   --data-binary @"$ARCHIVE" | python3 -m json.tool
 
 echo "Deploying..."
-CONTENT_B64=$(base64 < "$ARCHIVE" | tr -d '\n')
+export CONTENT_B64=$(base64 < "$ARCHIVE" | tr -d '\n')
+export VIBE_KEY
 python3 - <<PY
 import json, os
 payload = {
   "source": {"content": os.environ["CONTENT_B64"]},
   "runtime": "node20",
-  "install": "cd /opt/app && npm install --production",
+  "install": "mkdir -p /var/lib/sign-stamp-data && cd /opt/app && npm install --production",
   "start": "cd /opt/app && node server.js",
   "port": 3000,
   "env": {
     "NODE_ENV": "production",
     "VIBE_API_KEY": os.environ["VIBE_KEY"],
     "APP_ID": os.environ.get("APP_ID", "761fdd2e-a613-4276-bdc7-87e07df05445"),
+    "DATA_DIR": "/var/lib/sign-stamp-data",
     "BITRIX_PORTAL": "admsp.bitrix24.ru",
     "DISK_STORAGE_ID": "3"
   }

@@ -370,9 +370,10 @@ async function saveAllSettings() {
   if (sync?.success) {
     const ids = (sync.entityTypeIds || []).join(', ') || 'нет';
     const republishNote = sync.republished ? ' (переопубликовано)' : '';
+    const snapshotNote = sync.snapshotUploaded ? ' + snapshot' : '';
     btn.textContent = 'Сохранено ✓';
     if (statusEl) {
-      statusEl.textContent = `Placements обновлены для процессов: ${ids}${republishNote}`;
+      statusEl.textContent = `Placements обновлены для процессов: ${ids}${republishNote}${snapshotNote}`;
     }
   } else if (sync?.error) {
     btn.textContent = 'Сохранено';
@@ -474,6 +475,12 @@ function appendGenerateResponseButton(container, entityTypeId, itemId) {
   });
 }
 
+function isPdfFile(file = {}) {
+  const name = String(file.name || '').toLowerCase();
+  const type = String(file.contentType || '').toLowerCase();
+  return type.includes('pdf') || name.endsWith('.pdf');
+}
+
 function signPanelHtml(prepare, certs, mode, { certsLoading = false, certError = '' } = {}) {
   const certStatus = certError
     ? certError
@@ -482,6 +489,13 @@ function signPanelHtml(prepare, certs, mode, { certsLoading = false, certError =
       : certs.length
         ? `Найдено сертификатов: ${certs.length}`
         : 'Сертификаты не найдены. Установите КриптоПро и сертификат.';
+
+  const pdfStampOption = isPdfFile(prepare.file)
+    ? `<label class="checkbox-label stamp-option">
+        <input type="checkbox" id="add-stamp" checked>
+        Добавить визуальный штамп ЭЦП на PDF
+      </label>`
+    : '';
 
   return `
     <div class="card" id="sign-card">
@@ -494,6 +508,7 @@ function signPanelHtml(prepare, certs, mode, { certsLoading = false, certError =
         <select id="cert-select" size="6" class="cert-list">${renderCertOptions(certs)}</select>
       </label>
       <p id="cert-count" class="hint ${certError ? 'cert-error' : ''}">${escapeHtml(certStatus)}</p>
+      ${pdfStampOption}
       <div class="sign-actions">
         <button id="sign-btn" class="btn primary" ${certs.length && !certsLoading ? '' : 'disabled'}>Подписать</button>
       </div>
@@ -612,10 +627,11 @@ function bindSignPanel(prepare, certs, mode) {
 
       statusEl.textContent = 'Сохранение в карточку...';
 
-      const baseName = prepare.file.name.replace(/\.[^.]+$/, '');
+      const addStamp = document.getElementById('add-stamp')?.checked ?? false;
       const payload = {
         prepareId: prepare.prepareId,
         detachedSigBase64: detachedSig,
+        addStamp,
         certInfo: {
           ...cert,
           signedAt: new Date().toLocaleString('ru-RU'),
@@ -633,7 +649,9 @@ function bindSignPanel(prepare, certs, mode) {
         body: JSON.stringify(payload),
       });
 
-      statusEl.textContent = '✓ Документ подписан. PDF со штампом и откреплённая подпись сохранены в карточку.';
+      statusEl.textContent = addStamp
+        ? '✓ Документ подписан. PDF со штампом и откреплённая подпись сохранены в карточку.'
+        : '✓ Документ подписан. PDF без штампа и откреплённая подпись сохранены в карточку.';
       statusEl.className = 'status success';
     } catch (err) {
       const text = formatError(err);
